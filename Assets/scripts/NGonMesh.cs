@@ -23,7 +23,8 @@ public class NGonMesh : MonoBehaviour {
   }
 
 
-  void Start() {
+  void Start()
+  {
       CreateBaseCube();
   }
 

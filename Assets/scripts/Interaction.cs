@@ -23,6 +23,10 @@ public class Interaction : MonoBehaviour
   private Vector3 CameraTargetPos;
   private Vector3 dampVel;
 
+  private float overFaceTimer = 0;
+  private int lastFaceIndex = -1;
+  private Color faceColor;
+
   enum InteractionState {
     Idle,
     Extrude,
@@ -72,14 +76,20 @@ public class Interaction : MonoBehaviour
         RaycastHit hit;
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         bool didInteract = false;
-        if (Physics.Raycast(ray, out hit)) {
-          if (hit.collider.tag == "VertexCollider") {
+        if (Physics.Raycast(ray, out hit))
+        {
+          if (hit.collider.tag == "VertexCollider")
+          {
             didInteract = DoHitVertex(hit);
-          } else {
+          }
+          else
+          {
             didInteract = DoHitFace(hit);
+            overFaceTimer += Time.deltaTime;
           }
         }
-        if (!didInteract && Input.GetMouseButton(2)) {
+
+      if (!didInteract && Input.GetMouseButton(2)) {
           Rotate((Vector2)Input.mousePosition - lastMousePos);
         }
 
@@ -120,13 +130,34 @@ public class Interaction : MonoBehaviour
   bool DoHitFace(RaycastHit hit) {
     int ngonFace = triangulator.MapTriIndex(hit.triangleIndex);
     if (Input.GetMouseButtonDown(0)) {
+      if (lastFaceIndex == ngonFace) {
+        ngon.FaceColors[ngonFace] = faceColor;
+      }
       extrudeFaceIndex = ngon.FaceExtrude(ngonFace, out extrudeDir);
       state = InteractionState.Extrude;
       extrudeStartMousePos = Input.mousePosition;
       return true;
     } else if (Input.GetMouseButtonDown(1)) {
       ngon.VertexMerge(ngonFace);
+      lastFaceIndex = -1;
+    } else {
+      if (ngonFace != lastFaceIndex)
+      {
+        if (lastFaceIndex != -1)
+        {
+          ngon.FaceColors[lastFaceIndex] = faceColor;
+        }
+
+        overFaceTimer = 0;
+        faceColor = ngon.FaceColors[ngonFace];
+        lastFaceIndex = ngonFace;
+      }
+
+      ngon.FaceColors[ngonFace] = Color.Lerp(faceColor, Color.white, (Mathf.Sin(overFaceTimer * 2) + 1) * 0.5f);
+      ngon.ThrowChanged();
     }
+
+
     return false;
   }
 }
