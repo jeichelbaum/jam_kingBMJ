@@ -3,6 +3,8 @@ using System.Runtime.Remoting.Contexts;
 using UnityEngine;
 using System.Collections.Generic;
 
+using Random = UnityEngine.Random;
+
 public class NGonMesh : MonoBehaviour {
 
   public float extrudeOffset = 2f;
@@ -11,6 +13,7 @@ public class NGonMesh : MonoBehaviour {
 
   public List<Vector3> vertices = new List<Vector3>();
   public List<List<int>> faces = new List<List<int>>();
+  public List<Color> FaceColors = new List<Color>();
 
   public void ThrowChanged() {
     if (Changed != null) {
@@ -20,6 +23,7 @@ public class NGonMesh : MonoBehaviour {
 
   public void CreateOneFace() {
     faces.Add(new List<int>(vertices.Count));
+    FaceColors.Add(new Color(Random.Range(0.0f, 1), Random.Range(0.0f, 1), Random.Range(0.0f, 1)));
 
     for (int i = 0; i < vertices.Count; i++) {
         faces[0].Add(i);
@@ -37,15 +41,19 @@ public class NGonMesh : MonoBehaviour {
 
   public void CreateFace(List<int> vertexIndicies) {
       faces.Add(vertexIndicies);
+      FaceColors.Add(new Color(Random.Range(0.0f, 1), Random.Range(0.0f, 1), Random.Range(0.0f, 1)));
+  }
+
+  public void CreateFace(List<int> vertexIndicies, Color col) {
+    faces.Add(vertexIndicies);
+    FaceColors.Add(col);
   }
 
 
   public void DeleteFace(int face) {
       faces.RemoveAt(face);
+    FaceColors.RemoveAt(face);
   }
-
-
-
 
   private Vector3 GetCenter(int face){
 	Vector3 center = new Vector3(0,0,0);
@@ -91,38 +99,42 @@ public class NGonMesh : MonoBehaviour {
   }
 
 
-  public void VertexMerge(int faceToDelete) {
-      // add center of face as vertex to verticies and store the index of the new vertex
-      int newVertexIndex = AddVertex(GetCenter(faceToDelete));
+  public void VertexMerge(int faceToDelete)
+  {
+    // add center of face as vertex to verticies and store the index of the new vertex
+    int newVertexIndex = AddVertex(GetCenter(faceToDelete));
 
-      // loop over all vertexIndicies that will be deleted
-      for (int v = faces[faceToDelete].Count - 1; v >= 0; v--)
-      {
-          int vertexIndexToDelete = faces[faceToDelete][v];
 
-          for (int faceIndex = faces.Count-1; faceIndex >= 0 ; faceIndex--)
-          {
-              for (int vertexIndex = faces[faceIndex].Count-1; vertexIndex >= 0 ; vertexIndex--)
-              {
-                  // if vertex will be deleted from face, add new vertex to that face
-                  if (faces[faceIndex][vertexIndex] == vertexIndexToDelete)
-                  {
-                      faces[faceIndex].RemoveAt(vertexIndex);
-                      // only once though
-                      AddUniqueIndex(faces[faceIndex], newVertexIndex);
-                  }
-              }
-          }
-      }
+    // loop over all vertexIndicies that will be deleted
+    for (int v = faces[faceToDelete].Count - 1; v >= 0; v--)
+    {
+      int vertexIndexToDelete = faces[faceToDelete][v];
 
       for (int faceIndex = faces.Count - 1; faceIndex >= 0; faceIndex--)
       {
-          if (faces[faceIndex].Count <= 2) {
-              faces.RemoveAt(faceIndex);
+        for (int vertexIndex = faces[faceIndex].Count - 1; vertexIndex >= 0; vertexIndex--)
+        {
+          // if vertex will be deleted from face, add new vertex to that face
+          if (faces[faceIndex][vertexIndex] == vertexIndexToDelete)
+          {
+            faces[faceIndex].RemoveAt(vertexIndex);
+            // only once though
+            AddUniqueIndex(faces[faceIndex], newVertexIndex);
           }
+        }
       }
+    }
 
-      ThrowChanged();
+    for (int faceIndex = faces.Count - 1; faceIndex >= 0; faceIndex--)
+    {
+      if (faces[faceIndex].Count <= 2)
+      {
+        DeleteFace(faceIndex);
+      }
+    }
+
+    //
+    ThrowChanged();
   }
 
 
@@ -145,22 +157,31 @@ public class NGonMesh : MonoBehaviour {
         newVertexIndicies.Add(AddVertex(vertex + extrudeDir));
       }
 
+    Color faceColor = FaceColors[faceIndex];
+
     int n = faces[faceIndex].Count;
       // build face for each edge
-      for (int vertexIndex = 0; vertexIndex < n; vertexIndex++) {
+      for (int vertexIndex = 0; vertexIndex < n; vertexIndex++)
+      {
+        faceColor = Mutate(faceColor);
           CreateFace(new List<int>{
               faces[faceIndex][vertexIndex],
               faces[faceIndex][(vertexIndex + 1)%n],
               newVertexIndicies[(vertexIndex + 1)%n],
               newVertexIndicies[vertexIndex]
-          });  
+          }, faceColor);  
       }
 
-      CreateFace(newVertexIndicies);
+      faceColor = Mutate(faceColor);
+      CreateFace(newVertexIndicies, faceColor);
       DeleteFace(faceIndex);
 
     ThrowChanged();
     return faces.Count - 1;
+  }
+
+  Color Mutate(Color col) {
+    return new Color(col.r + Random.Range(-0.05f, 0.1f), col.g + Random.Range(-0.05f, 0.1f), col.b + Random.Range(-0.05f, 0.1f));
   }
 
   public void FaceDetrude(int faceIndex)

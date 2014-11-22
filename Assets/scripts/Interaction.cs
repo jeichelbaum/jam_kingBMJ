@@ -20,6 +20,9 @@ public class Interaction : MonoBehaviour
   private Vector3 extrudeDir = Vector3.zero;
   private Vector2 extrudeStartMousePos;
 
+  private Vector3 CameraTargetPos;
+  private Vector3 dampVel;
+
   enum InteractionState {
     Idle,
     Extrude,
@@ -30,6 +33,7 @@ public class Interaction : MonoBehaviour
   void Awake() {
     triangulator = GetComponent<Triangulator>();
     ngon = GetComponent<NGonMesh>();
+    CameraTargetPos = Camera.main.transform.position;
   }
 
   void OnEnable() {
@@ -94,7 +98,11 @@ public class Interaction : MonoBehaviour
         ngon.Move(extrudeFaceIndex, extrudeDir * (dist - prevDist) * 0.1f);
         break;
     }
-   
+
+    CameraTargetPos += (CameraTargetPos - transform.position).normalized*Input.GetAxis("Mouse ScrollWheel") * 10;
+
+    Camera.main.transform.position = Vector3.SmoothDamp(Camera.main.transform.position, CameraTargetPos, ref dampVel,
+      0.3f);
 
     lastMousePos = Input.mousePosition;
   }
@@ -116,6 +124,8 @@ public class Interaction : MonoBehaviour
       state = InteractionState.Extrude;
       extrudeStartMousePos = Input.mousePosition;
       return true;
+    } else if (Input.GetMouseButtonDown(1)) {
+      ngon.VertexMerge(ngonFace);
     }
     return false;
   }

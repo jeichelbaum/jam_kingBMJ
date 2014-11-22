@@ -116,24 +116,28 @@ public class Triangulator : MonoBehaviour
     var indices = new List<int>();
     var vertices = new List<Vector3>();
     var normals =  new List<Vector3>();
+    var uvs = new List<Vector2>();
+    var colors = new List<Color>();
 
+    int triIndex = 0;
     foreach (var triangle in tris) {
       for (int i = 0; i < 3; i++) {
         indices.Add(indices.Count);
         vertices.Add(triangle.Vertices[i]);
         normals.Add(triangle.Normal());
+        uvs.Add(Vector2.zero);
+        colors.Add(NGon.FaceColors[MapTriIndex(triIndex)]);
       }
+      triIndex++;
     }
+
+    mesh.Clear();
 
     mesh.vertices = vertices.ToArray();
     mesh.triangles = indices.ToArray();
+    mesh.colors = colors.ToArray();
 
-    var uvs = new Vector2[vertices.Count];
-    for (int i = 0; i < vertices.Count; i++) {
-      uvs[i] = Vector2.zero;
-    }
-
-    mesh.uv = uvs;
+    mesh.uv = uvs.ToArray();
     mesh.normals = normals.ToArray();
 
     meshColl.sharedMesh = mesh;
