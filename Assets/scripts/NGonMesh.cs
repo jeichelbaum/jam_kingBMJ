@@ -18,6 +18,17 @@ public class NGonMesh {
 	return center / faces[face].Length;
   }
 
+  public void Move(int face, Vector3 direction) {
+      foreach (int vIndex in faces[face])
+      {
+          vertices[vIndex] += direction;
+      }
+
+      if (Changed != null) {
+          Changed();
+      }
+  }
+
   public void Scale(int face, float scale) {    
     Vector3 center = GetCenter(face);
 
@@ -38,6 +49,7 @@ public class NGonMesh {
       foreach (int vIndex in faces[face])
       {
           Vector3 offset = vertices[vIndex] - center;
+          offset = rotation * offset;
           vertices[vIndex] = center + offset;
       }
 
@@ -46,6 +58,8 @@ public class NGonMesh {
           Changed();
       }
   }
+
+
 
   public int TriangleToNgon(int triangle) {
       for (int faceIndex = 0; faceIndex < faces.Length; faceIndex++ )
@@ -61,4 +75,6 @@ public class NGonMesh {
       
       return -1;
   }
+
+
 }
