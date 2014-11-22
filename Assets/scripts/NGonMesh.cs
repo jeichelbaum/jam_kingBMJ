@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Runtime.Remoting.Contexts;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class NGonMesh : MonoBehaviour {
 
   public event Action Changed;
 
-  public Vector3[] vertices;
-  public int[][] faces;
+  public List<Vector3> vertices = new List<Vector3>();
+  public List<int[]> faces = new List<int[]>();
 
   public void ThrowChanged() {
     if (Changed != null) {
@@ -16,13 +17,33 @@ public class NGonMesh : MonoBehaviour {
   }
 
   public void CreateOneFace() {
-    faces = new int[1][];
-    faces[0] = new int[vertices.Length];
-    for (int i = 0; i < vertices.Length; i++) {
+    faces.Add(new int[vertices.Count]);
+
+    for (int i = 0; i < vertices.Count; i++) {
       faces[0][i] = i;
     }
+
     ThrowChanged();
   }
+
+
+  public int AddVertex(Vector3 vertex)
+  {
+      vertices.Add(vertex);
+      return vertices.Count - 1;
+  }
+
+  public void CreateFace(int[] vertexIndicies) {
+      faces.Add(vertexIndicies);
+  }
+
+
+  public void DeleteFace(int face) {
+      faces.RemoveAt(face);
+  }
+
+
+
 
   private Vector3 GetCenter(int face){
 	Vector3 center = new Vector3(0,0,0);
@@ -70,7 +91,7 @@ public class NGonMesh : MonoBehaviour {
 
 
   public int TriangleToNgon(int triangle) {
-      for (int faceIndex = 0; faceIndex < faces.Length; faceIndex++ )
+      for (int faceIndex = 0; faceIndex < faces.Count; faceIndex++ )
       {
           foreach (int triIndex in faces[faceIndex])
           {
@@ -85,4 +106,28 @@ public class NGonMesh : MonoBehaviour {
   }
 
 
+  public void VertexMerge(int faceToDelete) {
+      // add center of face as vertex to verticies and store the index of the new vertex
+      int newVertexIndex = AddVertex(GetCenter(faceToDelete));
+
+      // loop over all vertexIndicies that will be deleted
+      foreach (int vertexIndexToDelete in faces[faceToDelete])
+      {
+          // check all vertexIndicies and replace if vertex will be deleted
+          for (int faceIndex = 0; faceIndex < faces.Count; faceIndex++)
+          {
+              for (int vertexIndex = 0; vertexIndex < faces[faceIndex].Length; vertexIndex++)
+              {
+                  if (faces[faceIndex][vertexIndex] == vertexIndexToDelete)
+                  {
+                      // replace vertexIndex with new vertexIndex
+                      faces[faceIndex][vertexIndex] = newVertexIndex;
+                  }
+              }
+          }
+      }
+
+      // delete face
+      DeleteFace(faceToDelete);
+  }
 }
