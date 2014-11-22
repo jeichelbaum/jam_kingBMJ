@@ -100,23 +100,27 @@ public class NGonMesh : MonoBehaviour {
       {
           int vertexIndexToDelete = faces[faceToDelete][v];
 
-          // check all vertexIndicies and delete them
           for (int faceIndex = faces.Count-1; faceIndex >= 0 ; faceIndex--)
           {
               for (int vertexIndex = faces[faceIndex].Count-1; vertexIndex >= 0 ; vertexIndex--)
               {
+                  // if vertex will be deleted from face, add new vertex to that face
                   if (faces[faceIndex][vertexIndex] == vertexIndexToDelete)
                   {
                       faces[faceIndex].RemoveAt(vertexIndex);
+                      // only once though
                       AddUniqueIndex(faces[faceIndex], newVertexIndex);
                   }
               }
           }
       }
 
-
-      // delete face
-      DeleteFace(faceToDelete);
+      for (int faceIndex = faces.Count - 1; faceIndex >= 0; faceIndex--)
+      {
+          if (faces[faceIndex].Count <= 2) {
+              faces.RemoveAt(faceIndex);
+          }
+      }
 
       ThrowChanged();
   }

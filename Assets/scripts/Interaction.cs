@@ -90,6 +90,8 @@ public class Interaction : MonoBehaviour
     {
         ngon.VertexMerge(ngonFace);
     }
+
+    return false;
   }
 }
 
