@@ -115,26 +115,26 @@ public class Triangulator : MonoBehaviour
 
     var indices = new List<int>();
     var vertices = new List<Vector3>();
+    var normals =  new List<Vector3>();
 
     foreach (var triangle in tris) {
       for (int i = 0; i < 3; i++) {
         indices.Add(indices.Count);
-        vertices.Add(triangle.Vertices[i]);        
+        vertices.Add(triangle.Vertices[i]);
+        normals.Add(triangle.Normal());
       }
     }
 
     mesh.vertices = vertices.ToArray();
     mesh.triangles = indices.ToArray();
 
-    var normal = tris[0].Normal();
-    var normals = new Vector3[vertices.Count];
     var uvs = new Vector2[vertices.Count];
     for (int i = 0; i < vertices.Count; i++) {
-      normals[i] = normal;
       uvs[i] = Vector2.zero;
     }
+
     mesh.uv = uvs;
-    mesh.normals = normals;
+    mesh.normals = normals.ToArray();
 
     meshColl.sharedMesh = mesh;
     meshColl.enabled = false;
