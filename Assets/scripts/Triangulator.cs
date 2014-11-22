@@ -4,7 +4,8 @@ using UnityEditorInternal;
 using UnityEngine;
 using System.Collections;
 
-[RequireComponent(typeof(NGonMesh), typeof(MeshFilter))]
+[RequireComponent(typeof(NGonMesh), typeof(MeshFilter), typeof(MeshRenderer))]
+[RequireComponent(typeof(MeshCollider))]
 [ExecuteInEditMode]
 public class Triangulator : MonoBehaviour
 {
@@ -72,11 +73,16 @@ public class Triangulator : MonoBehaviour
 
   public NGonMesh NGon;
   public Mesh mesh;
+  public MeshCollider meshColl;
+
+  private List<int> triIndexMap = new List<int>(); 
 
   public void Awake() {
-    GetComponent<MeshFilter>().mesh = new Mesh();
-    mesh = GetComponent<MeshFilter>().mesh;
+    GetComponent<MeshFilter>().sharedMesh = new Mesh();
+    mesh = GetComponent<MeshFilter>().sharedMesh;
     NGon = GetComponent<NGonMesh>();
+    meshColl = GetComponent<MeshCollider>();
+    meshColl.sharedMesh = mesh;
   }
 
   public void OnEnable() {
@@ -87,16 +93,24 @@ public class Triangulator : MonoBehaviour
     NGon.Changed -= NGon_Changed;
   }
 
+  public int MapTriIndex(int index) {
+    return triIndexMap[index];
+  }
+
   void NGon_Changed() {
     var tris = new List<Triangle>();
-    foreach (var face in NGon.faces) {
-      if(face == null)
-        continue;
+    triIndexMap.Clear();
+    for(int i = 0; i < NGon.faces.Count; i++) {
+      var face = NGon.faces[i];
       var points = new List<Vector3>();
       foreach (var index in face) {
         points.Add(NGon.vertices[index]);
       }
-      tris.AddRange(Triangulate(points));
+      var newTris = Triangulate(points);
+      for (int tri = 0; tri < newTris.Count; tri++) {
+        triIndexMap.Add(i);
+        tris.Add(newTris[tri]);
+      }
     }
 
     var indices = new List<int>();
@@ -121,6 +135,10 @@ public class Triangulator : MonoBehaviour
     }
     mesh.uv = uvs;
     mesh.normals = normals;
+
+    meshColl.sharedMesh = mesh;
+    meshColl.enabled = false;
+    meshColl.enabled = true;
   }
 
   private float GetArea(List<Vector3> _points) {

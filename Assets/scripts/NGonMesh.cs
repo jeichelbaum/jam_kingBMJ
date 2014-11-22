@@ -126,7 +126,7 @@ public class NGonMesh : MonoBehaviour {
       // calculate extrude dir
       Vector3 planeVec1 = vertices[faces[faceIndex][1]] - vertices[faces[faceIndex][0]];
       Vector3 planeVec2 = vertices[faces[faceIndex][2]] - vertices[faces[faceIndex][0]];
-      Vector3 extrudeDir = Vector3.Cross(planeVec1, planeVec2) * extrudeOffset;
+      Vector3 extrudeDir = Vector3.Cross(planeVec1, planeVec2).normalized * extrudeOffset;
 
       // create extruded verticies
       int[] newVertexIndicies = new int[faces[faceIndex].Length];
@@ -135,18 +135,22 @@ public class NGonMesh : MonoBehaviour {
         newVertexIndicies[vertexIndex] = AddVertex(vertex + extrudeDir);
       }
 
+    int n = faces[faceIndex].Length;
       // build face for each edge
-      for(int vertexIndex = 1; vertexIndex < faces[faceIndex].Length; faceIndex++) {
+      for (int vertexIndex = 0; vertexIndex < n; vertexIndex++) {
+
           CreateFace(new int[]{
-              faces[faceIndex][vertexIndex-1],
               faces[faceIndex][vertexIndex],
-              newVertexIndicies[vertexIndex],
-              newVertexIndicies[vertexIndex-1]
+              faces[faceIndex][(vertexIndex + 1)%n],
+              newVertexIndicies[(vertexIndex + 1)%n],
+              newVertexIndicies[vertexIndex]
           });  
       }
 
       CreateFace(newVertexIndicies);
       DeleteFace(faceIndex);
+
+    ThrowChanged();
   }
 
   public void FaceDetrude(int faceIndex)
