@@ -1,13 +1,28 @@
 ﻿using System;
+using System.Runtime.Remoting.Contexts;
 using UnityEngine;
 
-public class NGonMesh {
+public class NGonMesh : MonoBehaviour {
+
   public event Action Changed;
 
   public Vector3[] vertices;
   public int[][] faces;
-  
 
+  public void ThrowChanged() {
+    if (Changed != null) {
+      Changed();
+    }
+  }
+
+  public void CreateOneFace() {
+    faces = new int[1][];
+    faces[0] = new int[vertices.Length];
+    for (int i = 0; i < vertices.Length; i++) {
+      faces[0][i] = i;
+    }
+    ThrowChanged();
+  }
 
   private Vector3 GetCenter(int face){
 	Vector3 center = new Vector3(0,0,0);
