@@ -12,6 +12,8 @@ public class Interaction : MonoBehaviour
 
   private List<GameObject> vertexColls = new List<GameObject>();
 
+  private Vector2 lastMousePos;
+
   void Awake() {
     triangulator = GetComponent<Triangulator>();
     ngon = GetComponent<NGonMesh>();
@@ -48,24 +50,42 @@ public class Interaction : MonoBehaviour
   void Update () {
     RaycastHit hit;
 	  var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+    bool didInteract = false;
+
 	  if (Physics.Raycast(ray, out hit)) {
 	    if (hit.collider.tag == "VertexCollider") {
-	      DoHitVertex(hit);
+        didInteract = DoHitVertex(hit);
 	    } else {
-	      DoHitFace(hit);
+        didInteract = DoHitFace(hit);
 	    }
 	  }
-	}
 
-  void DoHitVertex(RaycastHit hit) {
-    
+    if (!didInteract && Input.GetMouseButton(2)) {
+      Rotate((Vector2)Input.mousePosition - lastMousePos);
+    }
+
+    lastMousePos = Input.mousePosition;
   }
 
-  void DoHitFace(RaycastHit hit) {
+  void Rotate(Vector2 mouseDelta) {
+    transform.RotateAround(transform.position, Vector3.up, -mouseDelta.x * 0.4f);
+    transform.RotateAround(transform.position, Vector3.right, mouseDelta.y);
+  }
+
+
+  bool DoHitVertex(RaycastHit hit)
+  {
+    return false;
+  }
+
+  bool DoHitFace(RaycastHit hit) {
     int ngonFace = triangulator.MapTriIndex(hit.triangleIndex);
     if (Input.GetMouseButtonDown(0)) {
       ngon.FaceExtrude(ngonFace);
+      return true;
     }
+    return false;
   }
 }
 
