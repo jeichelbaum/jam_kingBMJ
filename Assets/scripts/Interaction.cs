@@ -14,6 +14,19 @@ public class Interaction : MonoBehaviour
 
   private Vector2 lastMousePos;
 
+  private InteractionState state = InteractionState.Idle;
+
+  private int extrudeFaceIndex = 0;
+  private Vector3 extrudeDir = Vector3.zero;
+  private Vector2 extrudeStartMousePos;
+
+  enum InteractionState {
+    Idle,
+    Extrude,
+    Scale,
+    Rotate
+  }
+
   void Awake() {
     triangulator = GetComponent<Triangulator>();
     ngon = GetComponent<NGonMesh>();
@@ -48,22 +61,40 @@ public class Interaction : MonoBehaviour
   }
 
   void Update () {
-    RaycastHit hit;
-	  var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-    bool didInteract = false;
+    switch (state)
+    {
+      case InteractionState.Idle:
+        RaycastHit hit;
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        bool didInteract = false;
+        if (Physics.Raycast(ray, out hit)) {
+          if (hit.collider.tag == "VertexCollider") {
+            didInteract = DoHitVertex(hit);
+          } else {
+            didInteract = DoHitFace(hit);
+          }
+        }
+        if (!didInteract && Input.GetMouseButton(2)) {
+          Rotate((Vector2)Input.mousePosition - lastMousePos);
+        }
 
-	  if (Physics.Raycast(ray, out hit)) {
-	    if (hit.collider.tag == "VertexCollider") {
-        didInteract = DoHitVertex(hit);
-	    } else {
-        didInteract = DoHitFace(hit);
-	    }
-	  }
+        
+        break;
+      case InteractionState.Extrude:
+        if (Input.GetMouseButtonUp(0))
+        {
+          state = InteractionState.Idle;
+          break;
+        }
 
-    if (!didInteract && Input.GetMouseButton(2)) {
-      Rotate((Vector2)Input.mousePosition - lastMousePos);
+        var prevDist = Vector3.Distance(lastMousePos, extrudeStartMousePos);
+        var dist = Vector3.Distance(Input.mousePosition, extrudeStartMousePos);
+
+        ngon.Move(extrudeFaceIndex, extrudeDir * (dist - prevDist) * 0.1f);
+        break;
     }
+   
 
     lastMousePos = Input.mousePosition;
   }
@@ -74,23 +105,18 @@ public class Interaction : MonoBehaviour
   }
 
 
-  bool DoHitVertex(RaycastHit hit)
-  {
+  bool DoHitVertex(RaycastHit hit) {
     return false;
   }
 
   bool DoHitFace(RaycastHit hit) {
     int ngonFace = triangulator.MapTriIndex(hit.triangleIndex);
-    if (Input.GetMouseButtonDown(0))
-    {
-        ngon.FaceExtrude(ngonFace);
+    if (Input.GetMouseButtonDown(0)) {
+      extrudeFaceIndex = ngon.FaceExtrude(ngonFace, out extrudeDir);
+      state = InteractionState.Extrude;
+      extrudeStartMousePos = Input.mousePosition;
       return true;
     }
-    else if (Input.GetMouseButtonDown(1))
-    {
-        ngon.VertexMerge(ngonFace);
-    }
-
     return false;
   }
 }
