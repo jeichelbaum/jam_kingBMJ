@@ -1,15 +1,217 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEditorInternal;
+using UnityEngine;
 using System.Collections;
 
-public class Triangulator : MonoBehaviour {
+public class Triangulator : MonoBehaviour
+{
+  public class Triangle {
+    public Vector3[] Vertices { get; private set; }
+    public Vector3 Centroid { get; private set; }
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    public Triangle(Vector3 v0, Vector3 v1, Vector3 v2) {
+      Vertices = new Vector3[3];
+      Vertices[0] = v0;
+      Vertices[1] = v1;
+      Vertices[2] = v2;
+      Centroid = (v0 + v1 + v2) / 3;
+    }
+
+    public bool IsPointInTriangle(Vector3 _point) {
+      if (IsPointPartOf(_point))
+        return false;
+
+      // Compute vectors        
+      Vector3 dir0 = Vertices[2] - Vertices[0];
+      Vector3 dir1 = Vertices[1] - Vertices[0];
+      Vector3 dir2 = _point - Vertices[0];
+
+      // Compute dot products
+      float dot00 = Vector3.Dot(dir0, dir0);
+      float dot01 = Vector3.Dot(dir0, dir1);
+      float dot02 = Vector3.Dot(dir0, dir2);
+      float dot11 = Vector3.Dot(dir1, dir1);
+      float dot12 = Vector3.Dot(dir1, dir2);
+
+      // Compute barycentric coordinates
+      float invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+      float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+      float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+      // Check if point is in triangle
+      return (u >= 0) && (v >= 0) && (u + v < 1);
+    }
+
+    public bool IsPointPartOf(Vector3 _point) {
+      return _point == Vertices[0] || _point == Vertices[1] || _point == Vertices[2];
+    }
+
+    public bool IsWoundClockwise() {
+      Vector3 cross = Vector3.Cross(Vertices[0] - Vertices[1], Vertices[0] - Vertices[2]);
+      return Vector3.Dot(cross, Vector3.up) > 0;
+    }
+
+    public override string ToString() {
+      return Vertices[0].ToString() + Vertices[1].ToString() + Vertices[2].ToString();
+    }
+
+    public float GetArea() {
+      return Vector3.Cross(Vertices[0] - Vertices[1], Vertices[0] - Vertices[2]).magnitude/2;
+    }
+  }
+
+  public NGonMesh NGon;
+  public Mesh mesh;
+
+  public void Awake() {
+    mesh = GetComponent<MeshFilter>().mesh;
+    NGon.Changed += NGon_Changed;
+  }
+
+  void NGon_Changed() {
+    var tris = new List<Triangle>();
+    foreach (var face in NGon.faces) {
+      var points = new List<Vector3>();
+      foreach (var index in face) {
+        points.Add(NGon.vertices[index]);
+      }
+      tris.AddRange(Triangulate(points));
+    }
+
+    var indices = new List<int>();
+    var vertices = new List<Vector3>();
+
+    foreach (var triangle in tris) {
+      for (int i = 0; i < 3; i++) {
+        indices.Add(indices.Count);
+        vertices.Add(triangle.Vertices[i]);        
+      }
+    }
+
+    mesh.vertices = vertices.ToArray();
+    mesh.triangles = indices.ToArray();
+  }
+
+  private float GetArea(List<Vector3> _points) {
+    float area = 0;
+    float an, ax, ay, az; // abs value of normal and its coords
+    int coord; // coord to ignore: 1=x, 2=y, 3=z
+    int i, j, k; // loop indices
+    int n = _points.Count;
+
+    if (_points.Count < 3) return 0; // a degenerate polygon
+
+    Vector3 N = Vector3.Cross(_points[0] - _points[1], _points[0] - _points[2]);
+
+    // select largest abs coordinate to ignore for projection
+    ax = (N.x > 0 ? N.x : -N.x); // abs x-coord
+    ay = (N.y > 0 ? N.y : -N.y); // abs y-coord
+    az = (N.z > 0 ? N.z : -N.z); // abs z-coord
+
+    coord = 3; // ignore z-coord
+    if (ax > ay)
+    {
+      if (ax > az) coord = 1; // ignore x-coord
+    }
+    else if (ay > az) coord = 2; // ignore y-coord
+
+    // compute area of the 2D projection
+    switch (coord)
+    {
+      case 1:
+        for (i = 1, j = 2, k = 0; i < n; i++, j++, k++)
+          area += (_points[i].y*(_points[j].z - _points[k].z));
+        break;
+      case 2:
+        for (i = 1, j = 2, k = 0; i < n; i++, j++, k++)
+          area += (_points[i].z*(_points[j].x - _points[k].x));
+        break;
+      case 3:
+        for (i = 1, j = 2, k = 0; i < n; i++, j++, k++)
+          area += (_points[i].x*(_points[j].y - _points[k].y));
+        break;
+    }
+    switch (coord)
+    {
+        // wrap-around term
+      case 1:
+        area += (_points[n].y*(_points[1].z - _points[n - 1].z));
+        break;
+      case 2:
+        area += (_points[n].z*(_points[1].x - _points[n - 1].x));
+        break;
+      case 3:
+        area += (_points[n].x*(_points[1].y - _points[n - 1].y));
+        break;
+    }
+
+    // scale to get area before projection
+    an = Mathf.Sqrt(ax*ax + ay*ay + az*az); // length of normal vector
+    switch (coord)
+    {
+      case 1:
+        area *= (an/(2*N.x));
+        break;
+      case 2:
+        area *= (an/(2*N.y));
+        break;
+      case 3:
+        area *= (an/(2*N.z));
+        break;
+    }
+    return area;
+  }
+
+  private List<Triangle> Triangulate(List<Vector3> _points) {
+    var points = new LinkedList<Vector3>();
+    //Check if poly is wound clockwise
+    if (GetArea(_points) > 0) {
+      foreach (Vector2 point in _points) {
+        points.AddLast(point);
+      }
+    } else { //If not pass vertices backwards to make list clockwise
+      for (int i = _points.Count - 1; i >= 0; i--) {
+        points.AddLast(_points[i]);
+      }
+    }
+
+    var triangles = new List<Triangle>();
+    LinkedListNode<Vector3> active = points.First;
+    while (points.Count > 3) {
+      bool isEar = true;
+      if (IsConvex((active.Previous ?? points.Last).Value, active.Value, (active.Next ?? points.First).Value)) {
+        LinkedListNode<Vector3> checker = points.First;
+        while (checker.Next != null) {
+          var current = new Triangle((active.Previous ?? points.Last).Value, active.Value, (active.Next ?? points.First).Value);
+          if (current.IsPointInTriangle(checker.Value)) {
+            isEar = false;
+            break;
+          }
+          checker = checker.Next ?? points.First;
+        }
+      } else {
+        isEar = false;
+      }
+
+      if (isEar) {
+        triangles.Add(new Triangle((active.Previous ?? points.Last).Value, active.Value, (active.Next ?? points.First).Value));
+        points.Remove(active);
+        active = points.First;
+      } else
+        active = active.Next;
+    }
+
+    triangles.Add(new Triangle(points.First.Value, points.First.Next.Value, points.Last.Value));
+
+    return triangles;
+  }
+
+  private bool IsConvex(Vector3 _prev, Vector3 _curr, Vector3 _next) {
+    Vector3 diff = _next - _prev;
+    Vector3 cross = Vector3.Cross(_prev - _curr, _next - _curr);
+    Vector3 perp = Vector3.Cross(cross, diff);
+    float d = Vector3.Dot(_curr - _prev, perp);
+    return d < 0;
+  }
 }
