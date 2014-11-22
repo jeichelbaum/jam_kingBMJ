@@ -4,6 +4,8 @@ using UnityEditorInternal;
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(NGonMesh), typeof(MeshFilter))]
+[ExecuteInEditMode]
 public class Triangulator : MonoBehaviour
 {
   public class Triangle {
@@ -65,8 +67,17 @@ public class Triangulator : MonoBehaviour
   public Mesh mesh;
 
   public void Awake() {
+    GetComponent<MeshFilter>().mesh = new Mesh();
     mesh = GetComponent<MeshFilter>().mesh;
+    NGon = GetComponent<NGonMesh>();
+  }
+
+  public void OnEnable() {
     NGon.Changed += NGon_Changed;
+  }
+
+  public void OnDisable() {
+    NGon.Changed -= NGon_Changed;
   }
 
   void NGon_Changed() {
