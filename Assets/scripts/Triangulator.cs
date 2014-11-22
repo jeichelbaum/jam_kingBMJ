@@ -213,15 +213,8 @@ public class Triangulator : MonoBehaviour
 
   private List<Triangle> Triangulate(List<Vector3> _points) {
     var points = new LinkedList<Vector3>();
-    //Check if poly is wound clockwise
-    if (new Triangle(_points[0], _points[1], _points[2]).IsWoundClockwise()) {
-      foreach (var point in _points) {
-        points.AddLast(point);
-      }
-    } else { //If not pass vertices backwards to make list clockwise
-      for (int i = _points.Count - 1; i >= 0; i--) {
-        points.AddLast(_points[i]);
-      }
+    foreach (var point in _points) {
+      points.AddLast(point);
     }
 
     var triangles = new List<Triangle>();
