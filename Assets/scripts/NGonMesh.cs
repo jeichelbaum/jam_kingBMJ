@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 public class NGonMesh : MonoBehaviour {
 
+  public float extrudeOffset = 2f;
+
   public event Action Changed;
 
   public List<Vector3> vertices = new List<Vector3>();
@@ -89,23 +91,6 @@ public class NGonMesh : MonoBehaviour {
   }
 
 
-
-  public int TriangleToNgon(int triangle) {
-      for (int faceIndex = 0; faceIndex < faces.Count; faceIndex++ )
-      {
-          foreach (int triIndex in faces[faceIndex])
-          {
-              if (triangle == triIndex)
-              {
-                  return faceIndex;
-              }
-          }
-      }
-      
-      return -1;
-  }
-
-
   public void VertexMerge(int faceToDelete) {
       // add center of face as vertex to verticies and store the index of the new vertex
       int newVertexIndex = AddVertex(GetCenter(faceToDelete));
@@ -129,5 +114,43 @@ public class NGonMesh : MonoBehaviour {
 
       // delete face
       DeleteFace(faceToDelete);
+  }
+
+
+  public void VertexDemerge(int vertexIndex){
+    
+  }
+
+  public void FaceExtrude(int faceIndex)
+  {
+      // calculate extrude dir
+      Vector3 planeVec1 = vertices[faces[faceIndex][1]] - vertices[faces[faceIndex][0]];
+      Vector3 planeVec2 = vertices[faces[faceIndex][2]] - vertices[faces[faceIndex][0]];
+      Vector3 extrudeDir = Vector3.Cross(planeVec1, planeVec2) * extrudeOffset;
+
+      // create extruded verticies
+      int[] newVertexIndicies = new int[faces[faceIndex].Length];
+      for (int vertexIndex = 0; vertexIndex < faces[faceIndex].Length; vertexIndex++) { 
+        Vector3 vertex = vertices[faces[faceIndex][vertexIndex]];
+        newVertexIndicies[vertexIndex] = AddVertex(vertex + extrudeDir);
+      }
+
+      // build face for each edge
+      for(int vertexIndex = 1; vertexIndex < faces[faceIndex].Length; faceIndex++) {
+          CreateFace(new int[]{
+              faces[faceIndex][vertexIndex-1],
+              faces[faceIndex][vertexIndex],
+              newVertexIndicies[vertexIndex],
+              newVertexIndicies[vertexIndex-1]
+          });  
+      }
+
+      CreateFace(newVertexIndicies);
+      DeleteFace(faceIndex);
+  }
+
+  public void FaceDetrude(int faceIndex)
+  { 
+    
   }
 }
