@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<license id="0812a723-cd54-439a-9fe2-5407ec20df99" expiration="9999-12-31T23:59:59.9999999" type="Standard" email="jmv@filmskolen.dk" company="EUCROMA" seats="8" update-expiration="02/26/2015">
+  <name>Jon Vinther</name>
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
+      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+      <Reference URI="">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <DigestValue>rgVKjmjGuWKR1LpSm6XFTOI25YU=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>W59lW6SXcJKO59lesobI20mva+hIvmtd/9qu7Rn0pJwMzAQfXR0pulXLR8BdpjvRd/5NoijTanMu4C4kKDOITZXC56cT59THV4NtfRI0bIr4HDMnBhD/GPdRbDt2672XaqF6saElSXtc7eA4N7oO6Tnvq0XLqFBOEpXnTQiNFqCQQ7mdfrjY9C0CGkd+GNCEzYZlLDEesCa8911R4k6sXsKURTthvXGEzQVrAAeGsNiDkUdJtGClrVgkgLhTk+8kwcXlH2CRCNY7XbWbOQlhqo4n3K5UYBgsi/L4z/2n1DHjI058DHApk5/HvhSsz5KPY0Y+Whw2SxZQG0zR7bnMxcpLbo/2lKoTu//6mjgi908gLnWAZhddC5dLmTcbjtK7ea7rDbD421oWMUdCOd8/xkL6RYUmmAMzRRYEn2Us084uSSx8x4liBCuKmb54R2L53X69uajk/H4+qqYlZpNytvSA+aoS+yv7pnhqd8u35byd1T+B9yuTE6xNn/6y5gNBG6KfTKAFZAAlVyBG4JRzn+DGYjSG42DPdLJ6lU6eFpLxQ12cNP9Zs2eUoCPsCFRbzRLGiX3j6E77UVhtM3oPL1eP8VGZlZU9rl4KBsmK6JqFxC/gtaO/0Q6UJ0kOXalOuATHdt9Rc3eqfsLAQoilhiWHJnbf+GLz0EGxllioZKE=</SignatureValue>
+  </Signature>
+</license>

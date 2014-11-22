@@ -1,2 +1,7 @@
 Library
 Temp
+*.sln
+*.csproj
+*.DotSettings
+*.suo
+obj/
