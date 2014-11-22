@@ -20,6 +20,10 @@ public class NGonMesh : MonoBehaviour {
   }
 
 
+  void Start() {
+      CreateBaseCube();
+  }
+
   public void CreateOneFace() {
     faces.Add(new List<int>(vertices.Count));
 
