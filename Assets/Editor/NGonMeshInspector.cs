@@ -18,7 +18,7 @@ public class NGonMeshInspector : Editor {
     }
 
     if (GUILayout.Button("Make Face")) {
-      myTarget.CreateOneFace();
+      myTarget.CreateBaseCube();
     }
 
     moveDir = EditorGUILayout.Vector3Field("Direction", moveDir);

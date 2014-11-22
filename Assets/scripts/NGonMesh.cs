@@ -7,7 +7,8 @@ using Random = UnityEngine.Random;
 
 public class NGonMesh : MonoBehaviour {
 
-  public float extrudeOffset = 2f;
+    public float extrudeOffset = 2f;
+  public float cubeInitScale = 2f;
 
   public event Action Changed;
 
@@ -21,6 +22,11 @@ public class NGonMesh : MonoBehaviour {
     }
   }
 
+
+  void Start() {
+      CreateBaseCube();
+  }
+
   public void CreateOneFace() {
     faces.Add(new List<int>(vertices.Count));
     FaceColors.Add(new Color(Random.Range(0.0f, 1), Random.Range(0.0f, 1), Random.Range(0.0f, 1)));
@@ -31,6 +37,30 @@ public class NGonMesh : MonoBehaviour {
 
     ThrowChanged();
   }
+    
+   public void CreateBaseCube()
+  {
+      float initScale = cubeInitScale;
+      int v1 = AddVertex(new Vector3(0, 0, 0));
+      int v2 = AddVertex(new Vector3(initScale, 0, 0));
+      int v3 = AddVertex(new Vector3(initScale, 0, initScale));
+      int v4 = AddVertex(new Vector3(0, 0, initScale));
+
+      int v5 = AddVertex(new Vector3(0, initScale, 0));
+      int v6 = AddVertex(new Vector3(initScale, initScale, 0));
+      int v7 = AddVertex(new Vector3(initScale, initScale, initScale));
+      int v8 = AddVertex(new Vector3(0, initScale, initScale));
+
+      CreateFace(new List<int> { v1, v2, v3, v4 });
+      CreateFace(new List<int> { v5, v8, v7, v6 });
+    
+      CreateFace(new List<int> { v1, v4, v8, v5 });
+      CreateFace(new List<int> { v2, v1, v5, v6 });
+      CreateFace(new List<int> { v8, v4, v3, v7 });
+      CreateFace(new List<int> { v6, v7, v3, v2 });
+
+      ThrowChanged();
+   }
 
 
   public int AddVertex(Vector3 vertex)
@@ -139,7 +169,8 @@ public class NGonMesh : MonoBehaviour {
 
 
   public void VertexDemerge(int vertexIndex){
-    
+      
+
   }
 
   public int FaceExtrude(int faceIndex, out Vector3 normal)
