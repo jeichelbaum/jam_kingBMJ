@@ -63,8 +63,13 @@ public class Interaction : MonoBehaviour
 
   void DoHitFace(RaycastHit hit) {
     int ngonFace = triangulator.MapTriIndex(hit.triangleIndex);
-    if (Input.GetMouseButtonDown(0)) {
-      ngon.FaceExtrude(ngonFace);
+    if (Input.GetMouseButtonDown(0))
+    {
+        ngon.FaceExtrude(ngonFace);
+    }
+    else if (Input.GetMouseButtonDown(1))
+    {
+        ngon.VertexMerge(ngonFace);
     }
   }
 }
