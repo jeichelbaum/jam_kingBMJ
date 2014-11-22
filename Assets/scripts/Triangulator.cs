@@ -20,6 +20,13 @@ public class Triangulator : MonoBehaviour
       Centroid = (v0 + v1 + v2) / 3;
     }
 
+    public Vector3 Normal()
+    {
+      Vector3 cross = Vector3.Cross(Vertices[0] - Vertices[1], Vertices[0] - Vertices[2]);
+      cross.Normalize();
+      return cross;
+    }
+
     public bool IsPointInTriangle(Vector3 _point) {
       if (IsPointPartOf(_point))
         return false;
@@ -83,6 +90,8 @@ public class Triangulator : MonoBehaviour
   void NGon_Changed() {
     var tris = new List<Triangle>();
     foreach (var face in NGon.faces) {
+      if(face == null)
+        continue;
       var points = new List<Vector3>();
       foreach (var index in face) {
         points.Add(NGon.vertices[index]);
@@ -102,6 +111,16 @@ public class Triangulator : MonoBehaviour
 
     mesh.vertices = vertices.ToArray();
     mesh.triangles = indices.ToArray();
+
+    var normal = tris[0].Normal();
+    var normals = new Vector3[vertices.Count];
+    var uvs = new Vector2[vertices.Count];
+    for (int i = 0; i < vertices.Count; i++) {
+      normals[i] = normal;
+      uvs[i] = Vector2.zero;
+    }
+    mesh.uv = uvs;
+    mesh.normals = normals;
   }
 
   private float GetArea(List<Vector3> _points) {
@@ -177,8 +196,8 @@ public class Triangulator : MonoBehaviour
   private List<Triangle> Triangulate(List<Vector3> _points) {
     var points = new LinkedList<Vector3>();
     //Check if poly is wound clockwise
-    if (GetArea(_points) > 0) {
-      foreach (Vector2 point in _points) {
+    if (new Triangle(_points[0], _points[1], _points[2]).IsWoundClockwise()) {
+      foreach (var point in _points) {
         points.AddLast(point);
       }
     } else { //If not pass vertices backwards to make list clockwise
@@ -188,13 +207,18 @@ public class Triangulator : MonoBehaviour
     }
 
     var triangles = new List<Triangle>();
-    LinkedListNode<Vector3> active = points.First;
+    LinkedListNode<Vector3> listNode = points.First;
     while (points.Count > 3) {
       bool isEar = true;
-      if (IsConvex((active.Previous ?? points.Last).Value, active.Value, (active.Next ?? points.First).Value)) {
+
+      Vector3 prev = (listNode.Previous ?? points.Last).Value;
+      Vector3 curr = listNode.Value;
+      Vector3 next = (listNode.Next ?? points.First).Value;
+
+      if (IsConvex(prev, curr, next)) {
         LinkedListNode<Vector3> checker = points.First;
         while (checker.Next != null) {
-          var current = new Triangle((active.Previous ?? points.Last).Value, active.Value, (active.Next ?? points.First).Value);
+          var current = new Triangle((listNode.Previous ?? points.Last).Value, listNode.Value, (listNode.Next ?? points.First).Value);
           if (current.IsPointInTriangle(checker.Value)) {
             isEar = false;
             break;
@@ -206,11 +230,11 @@ public class Triangulator : MonoBehaviour
       }
 
       if (isEar) {
-        triangles.Add(new Triangle((active.Previous ?? points.Last).Value, active.Value, (active.Next ?? points.First).Value));
-        points.Remove(active);
-        active = points.First;
+        triangles.Add(new Triangle((listNode.Previous ?? points.Last).Value, listNode.Value, (listNode.Next ?? points.First).Value));
+        points.Remove(listNode);
+        listNode = points.First;
       } else
-        active = active.Next;
+        listNode = listNode.Next;
     }
 
     triangles.Add(new Triangle(points.First.Value, points.First.Next.Value, points.Last.Value));
@@ -223,6 +247,6 @@ public class Triangulator : MonoBehaviour
     Vector3 cross = Vector3.Cross(_prev - _curr, _next - _curr);
     Vector3 perp = Vector3.Cross(cross, diff);
     float d = Vector3.Dot(_curr - _prev, perp);
-    return d < 0;
+    return d > 0;
   }
 }
