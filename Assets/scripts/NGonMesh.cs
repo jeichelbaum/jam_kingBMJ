@@ -10,7 +10,7 @@ public class NGonMesh : MonoBehaviour {
   public event Action Changed;
 
   public List<Vector3> vertices = new List<Vector3>();
-  public List<int[]> faces = new List<int[]>();
+  public List<List<int>> faces = new List<List<int>>();
 
   public void ThrowChanged() {
     if (Changed != null) {
@@ -19,10 +19,10 @@ public class NGonMesh : MonoBehaviour {
   }
 
   public void CreateOneFace() {
-    faces.Add(new int[vertices.Count]);
+    faces.Add(new List<int>(vertices.Count));
 
     for (int i = 0; i < vertices.Count; i++) {
-      faces[0][i] = i;
+        faces[0].Add(i);
     }
 
     ThrowChanged();
@@ -35,10 +35,8 @@ public class NGonMesh : MonoBehaviour {
       return vertices.Count - 1;
   }
 
-  public int CreateFace(int[] vertexIndicies)
-  {
-    faces.Add(vertexIndicies);
-    return faces.Count - 1;
+  public void CreateFace(List<int> vertexIndicies) {
+      faces.Add(vertexIndicies);
   }
 
 
@@ -55,7 +53,7 @@ public class NGonMesh : MonoBehaviour {
 		center += vertices[vIndex];
 	}
   
-	return center / faces[face].Length;
+	return center / faces[face].Count;
   }
 
   public void Move(int face, Vector3 direction) {
@@ -98,24 +96,29 @@ public class NGonMesh : MonoBehaviour {
       int newVertexIndex = AddVertex(GetCenter(faceToDelete));
 
       // loop over all vertexIndicies that will be deleted
-      foreach (int vertexIndexToDelete in faces[faceToDelete])
+      for (int v = faces[faceToDelete].Count - 1; v >= 0; v--)
       {
-          // check all vertexIndicies and replace if vertex will be deleted
-          for (int faceIndex = 0; faceIndex < faces.Count; faceIndex++)
+          int vertexIndexToDelete = faces[faceToDelete][v];
+
+          // check all vertexIndicies and delete them
+          for (int faceIndex = faces.Count-1; faceIndex >= 0 ; faceIndex--)
           {
-              for (int vertexIndex = 0; vertexIndex < faces[faceIndex].Length; vertexIndex++)
+              for (int vertexIndex = faces[faceIndex].Count-1; vertexIndex >= 0 ; vertexIndex--)
               {
                   if (faces[faceIndex][vertexIndex] == vertexIndexToDelete)
                   {
-                      // replace vertexIndex with new vertexIndex
-                      faces[faceIndex][vertexIndex] = newVertexIndex;
+                      faces[faceIndex].RemoveAt(vertexIndex);
+                      AddUniqueIndex(faces[faceIndex], newVertexIndex);
                   }
               }
           }
       }
 
+
       // delete face
       DeleteFace(faceToDelete);
+
+      ThrowChanged();
   }
 
 
@@ -130,18 +133,18 @@ public class NGonMesh : MonoBehaviour {
       Vector3 planeVec2 = vertices[faces[faceIndex][2]] - vertices[faces[faceIndex][0]];
       Vector3 extrudeDir = Vector3.Cross(planeVec1, planeVec2).normalized * extrudeOffset;
     normal = extrudeDir.normalized;
+
       // create extruded verticies
-      int[] newVertexIndicies = new int[faces[faceIndex].Length];
-      for (int vertexIndex = 0; vertexIndex < faces[faceIndex].Length; vertexIndex++) { 
+      List<int> newVertexIndicies = new List<int>(faces[faceIndex].Count);
+      for (int vertexIndex = 0; vertexIndex < faces[faceIndex].Count; vertexIndex++) { 
         Vector3 vertex = vertices[faces[faceIndex][vertexIndex]];
-        newVertexIndicies[vertexIndex] = AddVertex(vertex + extrudeDir);
+        newVertexIndicies.Add(AddVertex(vertex + extrudeDir));
       }
 
-    int n = faces[faceIndex].Length;
+    int n = faces[faceIndex].Count;
       // build face for each edge
       for (int vertexIndex = 0; vertexIndex < n; vertexIndex++) {
-
-          CreateFace(new int[]{
+          CreateFace(new List<int>{
               faces[faceIndex][vertexIndex],
               faces[faceIndex][(vertexIndex + 1)%n],
               newVertexIndicies[(vertexIndex + 1)%n],
@@ -149,15 +152,64 @@ public class NGonMesh : MonoBehaviour {
           });  
       }
 
-      int newFace = CreateFace(newVertexIndicies);
+      CreateFace(newVertexIndicies);
       DeleteFace(faceIndex);
 
     ThrowChanged();
-    return newFace - 1;
+    return faces.Count - 1;
   }
 
   public void FaceDetrude(int faceIndex)
-  { 
-    
+  {
+      List<int> containedFaces = new List<int>();
+      List<int> baseVerticies = new List<int>();
+
+      // get containing faces
+      //Debug.Log("fIndex " + faceIndex + " faces: " + faces.Count);
+      foreach (int vertexIndex in faces[faceIndex])
+      {
+          AddContainingFaces(containedFaces, vertexIndex);
+      }
+      Debug.Log("#connected faces: " + containedFaces.Count);
+
+      // remove verticies of faceToDelete and create face from base verticies
+      /*foreach (int vertexIndex in faces[faceIndex])
+      {
+          baseVerticies.Remove(vertexIndex);
+      }
+      CreateFace(baseVerticies.ToArray());
+
+
+      // delete all faces that are attached to faceToDelete
+      foreach (int faceToDelete in containedFaces)
+      {
+          foreach (int vertexIndex in faces[faceToDelete])
+          {
+              AddUniqueIndex(baseVerticies, vertexIndex);
+          }
+
+          DeleteFace(faceToDelete);
+      }*/
+
+
+      ThrowChanged();
+  }
+
+  private void AddUniqueIndex(List<int> list, int index) {
+      if (!list.Contains(index))
+      {
+          list.Add(index);
+      }
+  }
+
+  private void AddContainingFaces(List<int> containedFaces, int vertexIndex)
+  {
+      for (int faceIndex = 0; faceIndex < faces.Count; faceIndex++) {
+          foreach (int vIndex in faces[faceIndex]) {
+              if (vertexIndex == vIndex) {
+                  AddUniqueIndex(containedFaces, faceIndex);   
+              }
+          }
+      }
   }
 }
