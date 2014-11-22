@@ -39,9 +39,7 @@ public class NGonMesh : MonoBehaviour {
           vertices[vIndex] += direction;
       }
 
-      if (Changed != null) {
-          Changed();
-      }
+      ThrowChanged();
   }
 
   public void Scale(int face, float scale) {    
@@ -53,9 +51,7 @@ public class NGonMesh : MonoBehaviour {
         vertices[vIndex] = center + offset * scale;
     }
 
-    if (Changed != null) {
-        Changed();
-    }
+    ThrowChanged();
   }
 
   public void Rotate(int face, Quaternion rotation) {
@@ -68,10 +64,7 @@ public class NGonMesh : MonoBehaviour {
           vertices[vIndex] = center + offset;
       }
 
-      if (Changed != null)
-      {
-          Changed();
-      }
+      ThrowChanged();
   }
 
 
